@@ -18,6 +18,7 @@
  ******************************************************************************/
 
 #include "icinga/service.h"
+#include "config/configitembuilder.h"
 #include "base/dynamictype.h"
 #include "base/objectlock.h"
 #include "base/logger_fwd.h"
@@ -48,7 +49,8 @@ int Service::GetNextDowntimeID(void)
 
 String Service::AddDowntime(const String& author, const String& comment,
     double startTime, double endTime, bool fixed,
-    const String& triggeredBy, double duration, const String& id, const String& authority)
+    const String& triggeredBy, double duration, const String& scheduledBy,
+    const String& id, const String& authority)
 {
 	String uid;
 
@@ -67,6 +69,7 @@ String Service::AddDowntime(const String& author, const String& comment,
 	downtime->SetFixed(fixed);
 	downtime->SetDuration(duration);
 	downtime->SetTriggeredBy(triggeredBy);
+	downtime->SetScheduledBy(scheduledBy);
 
 	int legacy_id;
 
@@ -312,4 +315,71 @@ int Service::GetDowntimeDepth(void) const
 	}
 
 	return downtime_depth;
+}
+
+void Service::UpdateSlaveScheduledDowntimes(void)
+{
+	ConfigItem::Ptr item = ConfigItem::GetObject("Service", GetName());
+
+	/* Don't create slave scheduled downtimes unless we own this object */
+	if (!item)
+		return;
+
+	/* Service scheduled downtime descs */
+	Dictionary::Ptr descs = GetScheduledDowntimeDescriptions();
+
+	if (!descs)
+		return;
+
+	ObjectLock olock(descs);
+
+	String sdname;
+	Value sddesc;
+	BOOST_FOREACH(boost::tie(sdname, sddesc), descs) {
+		std::ostringstream namebuf;
+		namebuf << GetName() << ":" << sdname;
+		String name = namebuf.str();
+
+		std::vector<String> path;
+		path.push_back("scheduled_downtimes");
+		path.push_back(sdname);
+
+		DebugInfo di;
+		item->GetLinkedExpressionList()->FindDebugInfoPath(path, di);
+
+		if (di.Path.IsEmpty())
+			di = item->GetDebugInfo();
+
+		ConfigItemBuilder::Ptr builder = make_shared<ConfigItemBuilder>(di);
+		builder->SetType("ScheduledDowntime");
+		builder->SetName(name);
+		builder->AddExpression("host", OperatorSet, GetHost()->GetName());
+		builder->AddExpression("service", OperatorSet, GetShortName());
+
+		if (!sddesc.IsObjectType<Dictionary>())
+			BOOST_THROW_EXCEPTION(std::invalid_argument("ScheduledDowntime description must be a dictionary."));
+
+		Dictionary::Ptr scheduledDowntime = sddesc;
+
+		Array::Ptr templates = scheduledDowntime->Get("templates");
+
+		if (templates) {
+			ObjectLock tlock(templates);
+
+			BOOST_FOREACH(const Value& tmpl, templates) {
+				builder->AddParent(tmpl);
+			}
+		}
+
+		/* Clone attributes from the scheduled downtime expression list. */
+		ExpressionList::Ptr sd_exprl = make_shared<ExpressionList>();
+		item->GetLinkedExpressionList()->ExtractPath(path, sd_exprl);
+
+		builder->AddExpressionList(sd_exprl);
+
+		ConfigItem::Ptr scheduledDowntimeItem = builder->Compile();
+		scheduledDowntimeItem->Register();
+		DynamicObject::Ptr dobj = scheduledDowntimeItem->Commit();
+		dobj->OnConfigLoaded();
+	}
 }

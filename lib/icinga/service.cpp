@@ -78,6 +78,7 @@ void Service::OnConfigLoaded(void)
 		m_Host->AddService(GetSelf());
 
 	UpdateSlaveNotifications();
+	UpdateSlaveScheduledDowntimes();
 }
 
 Service::Ptr Service::GetByNamePair(const String& hostName, const String& serviceName)
