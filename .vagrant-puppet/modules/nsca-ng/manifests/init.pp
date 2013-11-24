@@ -30,6 +30,11 @@ class nsca-ng-server {
     command => 'lokkit -p 5668:tcp'
   }
 
+  user { "nsca":
+    ensure => "present",
+    groups => "icingacmd"
+  }
+
   service { 'nsca-ng':
     enable => true,
     ensure => running,
