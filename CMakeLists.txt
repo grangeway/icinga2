@@ -30,6 +30,7 @@ endif()
 
 option(ICINGA2_WITH_MYSQL "Build the MySQL IDO module" ON)
 option(ICINGA2_WITH_PGSQL "Build the PostgreSQL IDO module" ON)
+option(ICINGA2_WITH_SQLSRV "Build the MS SQL Server IDO module" ON)
 option(ICINGA2_WITH_CHECKER "Build the checker module" ON)
 option(ICINGA2_WITH_COMPAT "Build the compat module" ON)
 option(ICINGA2_WITH_DEMO "Build the demo module" OFF)

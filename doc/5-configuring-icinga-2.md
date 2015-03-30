@@ -147,7 +147,7 @@ This constant is used by a number of
 [built-in check command definitions](7-icinga-template-library.md#plugin-check-commands).
 * The `NodeName` constant defines your local node name. Should be set to FQDN which is the default
 if not set. This constant is required for local host configuration, monitoring remote clients and
-cluster setup.
+cluster setups.
 
 Example:
 

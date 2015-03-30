@@ -34,7 +34,7 @@ if(ICINGA2_WITH_COMPAT)
   add_subdirectory(compat)
 endif()
 
-if(ICINGA2_WITH_MYSQL OR ICINGA2_WITH_PGSQL)
+if(ICINGA2_WITH_MYSQL OR ICINGA2_WITH_PGSQL OR ICINGA2_WITH_SQLSRV)
   add_subdirectory(db_ido)
 endif()
 
@@ -44,6 +44,10 @@ endif()
 
 if(ICINGA2_WITH_PGSQL)
   add_subdirectory(db_ido_pgsql)
+endif()
+
+if(ICINGA2_WITH_SQLSRV)
+  add_subdirectory(db_ido_sqlsrv)
 endif()
 
 if(ICINGA2_WITH_DEMO)
